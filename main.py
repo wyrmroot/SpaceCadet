@@ -3,12 +3,16 @@
 Discord bot to report mining operations status
 Based on tutorial at https://realpython.com/how-to-make-a-discord-bot-python/
 
+#TODO: Keep track of downtime since error first occurred
+
 """
 
 import discord
+import asyncio
 from discord.ext import commands
 from dotenv import load_dotenv
 import os
+from support import phoenix_connect
 
 
 # Load secrets from .env file
@@ -32,8 +36,28 @@ async def on_ready():
     # Start as idle, update to online once we connect to server
     await bot.change_presence(status=discord.Status.idle,
                               activity=discord.Activity(type=discord.ActivityType.playing,
-                                                        name='Idle',
+                                                        name='Initializing',
                                                         url=MONITOR_URL))
+    while bot.is_ready():
+        print('Fetching status')
+        try:
+            current_status = phoenix_connect.status_line(MONITOR_URL)
+            print(f'Got: {current_status}')
+            if current_status['error']:
+                await bot.change_presence(status=discord.Status.dnd,
+                                          activity=discord.Activity(type=discord.ActivityType.playing,
+                                                                    name=current_status['text'],
+                                                                    url=MONITOR_URL))
+            else:
+                await bot.change_presence(status=discord.Status.online,
+                                          activity=discord.Activity(type=discord.ActivityType.playing,
+                                                                    name=current_status['text'],
+                                                                    url=MONITOR_URL))
+        except Exception as e:
+            print(f'Got error {e}')
+
+        # Wait 1 minute (non-blocking)
+        await asyncio.sleep(60)
 
 
 @bot.command(name='status', help='Manually post a miner update')
