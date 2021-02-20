@@ -41,7 +41,7 @@ async def on_ready():
     while bot.is_ready():
         print('Fetching status')
         try:
-            current_status = phoenix_connect.status_line(MONITOR_URL)
+            current_status = phoenix_connect.status_line()
             print(f'Got: {current_status}')
             if current_status['error']:
                 await bot.change_presence(status=discord.Status.dnd,
@@ -55,6 +55,10 @@ async def on_ready():
                                                                     url=MONITOR_URL))
         except Exception as e:
             print(f'Got error {e}')
+            await bot.change_presence(status=discord.Status.dnd,
+                                      activity=discord.Activity(type=discord.ActivityType.playing,
+                                                                name="ERROR CONNECTING",
+                                                                url=MONITOR_URL))
 
         # Wait 1 minute (non-blocking)
         await asyncio.sleep(60)
@@ -64,6 +68,12 @@ async def on_ready():
 async def status(ctx):
     response = "Bot is live :tada: \n" \
                "Server is not yet connected :skull_crossbones: "
+    await ctx.send(response)
+
+
+@bot.command(name='profit', help='Get daily profit in $USD based on mining rates')
+async def profit(ctx):
+    response = phoenix_connect.get_profit()
     await ctx.send(response)
 
 
@@ -104,42 +114,6 @@ async def freq(ctx, a: int):
 async def gpu(ctx):
     response = f"Checking status of each GPU"
     await ctx.send(response)
-
-
-@bot.command(name='test', help='Test routine to change presence')
-async def test(ctx, p: int):
-    # TODO: Call the function that talks to the mining server
-    if p == 0:
-        response = "Switching to online (default)"
-        await bot.change_presence(status=discord.Status.online)
-    elif p == 1:
-        response = "Switching to connected"
-        await bot.change_presence(status=discord.Status.online,
-                                  activity=discord.Activity(type=discord.ActivityType.playing,
-                                                            name='290 MH/s, 1016W',
-                                                            url=MONITOR_URL))
-    elif p == 2:
-        response = "Switching to idle (paused)"
-        await bot.change_presence(status=discord.Status.idle,
-                                  activity=discord.Activity(type=discord.ActivityType.playing,
-                                                            name='Paused',
-                                                            url=MONITOR_URL))
-    elif p == 3:
-        response = "Switching to DND (error)"
-        await bot.change_presence(status=discord.Status.dnd,
-                                  activity=discord.Activity(type=discord.ActivityType.playing,
-                                                            name='ERROR',
-                                                            url=MONITOR_URL))
-    elif p == 4:
-        response = "Switching to custom status"
-        await bot.change_presence(status=discord.Status.online,
-                                  activity=discord.CustomActivity(name='Super awesome custom'))
-    else:
-        response = "ERR: Bad argument found"
-
-    # Wrap up and send
-    if response:
-        await ctx.send(response)
 
 
 @bot.command(name='quit', help='Fully quit the bot script. Warning: Cannot be restarted from discord')
