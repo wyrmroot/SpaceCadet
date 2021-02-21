@@ -48,6 +48,7 @@ async def on_ready():
                                           activity=discord.Activity(type=discord.ActivityType.playing,
                                                                     name=current_status['text'],
                                                                     url=MONITOR_URL))
+                # TODO: Send alerts on failure
             else:
                 await bot.change_presence(status=discord.Status.online,
                                           activity=discord.Activity(type=discord.ActivityType.playing,
@@ -59,6 +60,7 @@ async def on_ready():
                                       activity=discord.Activity(type=discord.ActivityType.playing,
                                                                 name="ERROR CONNECTING",
                                                                 url=MONITOR_URL))
+            # TODO: Send alerts on failure
 
         # Wait 1 minute (non-blocking)
         await asyncio.sleep(60)
@@ -66,8 +68,10 @@ async def on_ready():
 
 @bot.command(name='status', help='Manually post a miner update')
 async def status(ctx):
-    response = "Bot is live :tada: \n" \
-               "Server is not yet connected :skull_crossbones: "
+    miner_update = phoenix_connect.get_update()
+    response = ""
+    for key, val in miner_update.items():
+        response += f"{key}: {val}\n"
     await ctx.send(response)
 
 

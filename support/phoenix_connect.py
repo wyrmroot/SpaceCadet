@@ -20,7 +20,7 @@ def get_update():
     # TODO: Convert numerics into int from str
     summary = {'html_code': resp.status_code,
                'status_text': '',
-               'full_text': '',
+               # 'full_text': '',
                'hash rate': '',
                'time': '',
                'power': '',
@@ -46,6 +46,8 @@ def get_update():
         summary['uptime'] = timestamp.split()[1]
         summary['time'] = timestamp.split()[4]
 
+        # TODO: Extract individual GPU speeds, temps
+
     else:
         print(f"Warning: Got status code {summary['html_code']}")
 
@@ -54,7 +56,7 @@ def get_update():
 
 def status_line():
     activity = {'error': 0,
-              'text': ''}
+                'text': ''}
     summary = get_update()
     if summary['html_code'] == 200:
         activity['text'] = f"{summary['hash rate']} MH/s at {summary['time']}"
@@ -80,6 +82,8 @@ def get_profit():
     resp = requests.get(url)
     if resp.status_code != 200:
         print(f"Got code {resp.status_code}, aborting")
+        return
+
     soup = BeautifulSoup(resp.content, "html.parser")
     eth = soup.findAll('span')[3].text.split('\n')[2]
     empties = ('', ' ', '\t', '\n', '&nbsp;')
@@ -88,8 +92,3 @@ def get_profit():
     response = f"Current profits: **{day_profit} / day** (ETH = {eth}).\n" \
                f"Based on {hr}MH/s, {p}W at ${pcost}/kWh, fee {fee}%."
     return response
-
-
-
-
-
