@@ -116,7 +116,7 @@ async def freq(ctx, a: int):
 
 @bot.command(name='gpu', help='List GPU temps and speeds')
 async def gpu(ctx):
-    response = f"Checking status of each GPU"
+    response = phoenix_connect.gpu_readout()
     await ctx.send(response)
 
 

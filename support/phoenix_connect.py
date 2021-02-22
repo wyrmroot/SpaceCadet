@@ -24,29 +24,35 @@ def get_update():
                'hash rate': '',
                'time': '',
                'power': '',
-               'uptime': ''}
+               'uptime': ''
+               }
 
     # Check for HTTP code, error out if necessary
     # TODO: Handle discrete cases
     if summary['html_code'] == 200:
         # Convert to lines of text
         clean_text = BeautifulSoup(resp.text, "html.parser").text
-        resp.text_lines = clean_text.splitlines()
+        text_lines = clean_text.splitlines()
 
         # Remove lines that are empty or have only whitespace
         empties = ('', ' ', '\t', '\n', '&nbsp;')
-        resp.text_lines = [line for line in resp.text_lines if line not in empties]
+        text_lines = [line for line in text_lines if line not in empties]
 
         # Extract insights
         # TODO: Replace these with some more elegant regex
-        summary['hash rate'] = resp.text_lines[-2].split()[-2]
-        summary['power'] = resp.text_lines[-7].split()[-2]
-        timestamp = [line for line in resp.text_lines if line[0] == "*"][-1]
+        summary['hash rate'] = text_lines[-2].split()[-2]
+        summary['power'] = text_lines[-7].split()[-2]
+        timestamp = [line for line in text_lines if line[0] == "*"][-1]
         # Looks like ['***', '63:20', '***', '2/19', '10:16', '**************************************']
         summary['uptime'] = timestamp.split()[1]
         summary['time'] = timestamp.split()[4]
 
         # TODO: Extract individual GPU speeds, temps
+        idx_of_last_ts = len(text_lines) - 1 - text_lines[::-1].index(timestamp)
+        idx_of_gpu1 = len(text_lines) - 1 - text_lines[::-1].index(text_lines[idx_of_last_ts+3])
+        summary['gpu list'] = [text_lines[i].split(',')[0] for i in range(idx_of_gpu1, len(text_lines)-8)]
+        summary['gpu stats'] = text_lines[-8].split(',')
+        summary['gpu speeds'] = [item.split('(')[0] for item in text_lines[idx_of_last_ts-2].split(':')[2:]]
 
     else:
         print(f"Warning: Got status code {summary['html_code']}")
@@ -91,4 +97,25 @@ def get_profit():
     day_profit = row[-1]
     response = f"Current profits: **{day_profit} / day** (ETH = {eth}).\n" \
                f"Based on {hr}MH/s, {p}W at ${pcost}/kWh, fee {fee}%."
+    return response
+
+
+def gpu_readout():
+    summary = get_update()
+    response = ""
+    n_gpus = len(summary['gpu list'])
+    print(f"found {n_gpus} GPUs")
+    print(summary['gpu list'])
+    print(summary['gpu stats'])
+    print(summary['gpu speeds'])
+
+    for i in range(n_gpus):
+        #print(f"reading GPU {i}")
+        response += f"{summary['gpu list'][i].split('(')[0]}"
+        #print(f"{summary['gpu list'][i].split('(')[0]}")
+        response += f"{summary['gpu stats'][i].split(':')[1]}"
+        #print(f"{summary['gpu stats'][i].split(':')[1]}")
+        response += f"{summary['gpu speeds'][i]}\n"
+        #print(f"{summary['gpu speeds'][i]}\n")
+
     return response
